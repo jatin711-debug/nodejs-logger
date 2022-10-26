@@ -28,7 +28,7 @@ export default {
             color:"green",
             writeToFile:true
         },
-        errors:{
+        error:{
             color:"red",
             writeToFile:true
         },
