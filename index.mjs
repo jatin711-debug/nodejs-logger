@@ -1,6 +1,2 @@
-import { log, readLog } from "./logger.mjs";
-(async function (){
-    log({level: 'info', message: 'Hello Welsh!!'})
-    await readLog("info")
-})()
-
+export * from './dataTemplate.mjs';
+export * from './logger.mjs'

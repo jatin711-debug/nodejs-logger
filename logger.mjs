@@ -4,6 +4,8 @@ import moment from 'moment';
 import { existsSync, mkdirSync, appendFileSync, createReadStream } from 'fs';
 import readLine from 'readline';
 import config from './config.mjs';
+import address from 'address';
+import axios from 'axios';
 
 /**
  * Main Logging Function
@@ -53,8 +55,8 @@ const writeToConsole = (levelName, message, error = null) => {
     }
     message = error ? `${chalkFunction(`${error.message} \n ${error.stack}`)}` : message
     const header = `[${levelName.toUpperCase()}]:[${getFormattedCurrentDate()}]`
-    console.log(`${chalkFunction(header)}: ${chalkFunction(message)}`)
-
+    const ipData = `[Mac Address:${address.mac(function(err,mac){ return mac })}] [IP Address: ${address.ip()}]`
+    console.log(`${chalkFunction(header)} ${chalkFunction(message)} ${chalkFunction(ipData)}`)
 }
 
 /**
@@ -100,19 +102,30 @@ const getFormattedCurrentDate = () => {
 
 /**
  * 
- * @param {string} levelName 
+ * @param {string} level
  * @param {string} message 
  */
-const writeToFile = (level,message) => {
+const writeToFile = async (level,message) => {
     const logsDir = "./logs"
-    const data = `{"level":"${level.toUpperCase()}","message":"${message}", "timestamp":"${getFormattedCurrentDate()}"}\r\n`
+    const mac = address.mac(function(err,m){return m})
+    const ip = address.ip()
+    const data = `{"level":"${level.toUpperCase()}","message":"${message}", "timestamp":"${getFormattedCurrentDate()}","mac-address":"${mac}","ip":"${ip}"}\r\n`
     if(!existsSync(logsDir)){
         mkdirSync(logsDir)
     }
-
     const options = {
         encoding:"utf8",
         mode:438
     }
-    appendFileSync(`./logs/${level}.log`,data,options)
+    appendFileSync(`./logs/${level}.log`,data,options);
+    // try {
+    //     await axios.post('http://localhost:3000/',{
+    //             name:'Jatin',
+    //             logs:data
+    //     })
+    //     console.log("Success Sending Logs to Server")
+    // } catch (error) {
+    //     console.log("Error Sending Log Messages")
+    // }
+    // return
 }
