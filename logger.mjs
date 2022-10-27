@@ -6,20 +6,23 @@ import readLine from 'readline';
 import config from './config.mjs';
 import address from 'address';
 import axios from 'axios';
-
 /**
  * Main Logging Function
  * @param {object} options 
  * object -> { level, message, error }
  */
-export const log = (options) => {
+export const log = async (options,requestObject,serverUrl="") => {
     const levelName = getLevelName(options.level)
     let message = options.message ?? 'Unidentified Error'
     const error = options.error ?? null
+    const request = createRequestObject(requestObject);
     // always log to thr console
-    writeToConsole(levelName,message,error)
+    writeToConsole(levelName,message,error, request)
     if(config.levels[levelName].writeToFile) {
         writeToFile(levelName,message)
+    }
+    if(config.levels[levelName].sendToServer) {
+        await sendLogToServer(levelName,message,serverUrl)
     }
 } 
 
@@ -38,8 +41,11 @@ const getLevelName = (level) => {
  * @param {string} message 
  * @param {Error|null} error 
  */
-const writeToConsole = (levelName, message, error = null) => {
-    const level = config.levels[levelName]
+const writeToConsole = (levelName, message, error = null, requestObject = null) => {
+    if(requestObject === null) {
+        throw new Error("Request object is required");
+    }
+    const level = config.levels[levelName];
     let chalkFunction = null
     if(level.color.includes('#')) {
         chalkFunction = chalk.hex(level.color)
@@ -56,7 +62,8 @@ const writeToConsole = (levelName, message, error = null) => {
     message = error ? `${chalkFunction(`${error.message} \n ${error.stack}`)}` : message
     const header = `[${levelName.toUpperCase()}]:[${getFormattedCurrentDate()}]`
     const ipData = `[Mac Address:${address.mac(function(err,mac){ return mac })}] [IP Address: ${address.ip()}]`
-    console.log(`${chalkFunction(header)} ${chalkFunction(message)} ${chalkFunction(ipData)}`)
+    const requestData = `[Method:${requestObject.method} Host:${requestObject.hostname} BaseUrl:${requestObject.baseUrl} Url:${requestObject.url}]`
+    console.log(`${chalkFunction(header)} ${chalkFunction(message)} ${chalkFunction(ipData)} ${chalkFunction(requestData)}`)
 }
 
 /**
@@ -118,14 +125,43 @@ const writeToFile = async (level,message) => {
         mode:438
     }
     appendFileSync(`./logs/${level}.log`,data,options);
-    // try {
-    //     await axios.post('http://localhost:3000/',{
-    //             name:'Jatin',
-    //             logs:data
-    //     })
-    //     console.log("Success Sending Logs to Server")
-    // } catch (error) {
-    //     console.log("Error Sending Log Messages")
+}
+
+const sendLogToServer = async (level,message,serverUrl) => {
+    // if(validateUrl(serverUrl)) {
+    //     chalk.red("UnIdentified server Url Protocol....")
+    //     return;
     // }
-    // return
+    const mac = address.mac(function(err,m){return m})
+    const ip = address.ip()
+    const data = `{"level":"${level.toUpperCase()}","message":"${message}", "timestamp":"${getFormattedCurrentDate()}","mac-address":"${mac}","ip":"${ip}"}`
+    try {
+        await axios.post(serverUrl ,{
+                logs:data
+            }
+        )
+        console.log(chalk.green('Success Sending Logs to server',serverUrl))
+    } catch (error) {
+        console.log(chalk.red('Error sending logs to server'))
+    }
+}
+
+const validateUrl = (rawUrl)=>{
+    if(rawUrl.length < 1 || rawUrl.trim('').length < 1) {
+        return false;
+    }
+    let url = new URL(rawUrl);
+    if(!url.protocol === 'https' || !url.protocol === 'http') {
+        return false;
+    }
+    return true;
+}
+
+const createRequestObject = (request) =>{
+    return {
+        method: request.method,
+        hostname: request.hostname,
+        baseUrl: request.baseUrl,
+        url: request.url
+    }
 }

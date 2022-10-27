@@ -2,39 +2,48 @@ export default {
     levels: {
         access:{
             color:[200,148,255],
-            writeToFile:true
+            writeToFile:true,
+            sendToServer:true
         },
         warn:{
             color:"#ffff00",
-            writeToFile:true
+            writeToFile:true,
+            sendToServer:true
         },
         debug:{
             color:"cyan",
-            writeToFile:true
+            writeToFile:true,
+            sendToServer:true
         },
         system:{
             color:"blue",
-            writeToFile:true
+            writeToFile:true,
+            sendToServer:true
         },
         database:{
             color:"cyanBright",
-            writeToFile:true
+            writeToFile:true,
+            sendToServer:true
         },
         event:{
             color:"magenta",
-            writeToFile:true
+            writeToFile:true,
+            sendToServer:true
         },
         info:{
             color:"green",
-            writeToFile:true
+            writeToFile:true,
+            sendToServer:true
         },
         error:{
             color:"red",
-            writeToFile:true
+            writeToFile:true,
+            sendToServer:true
         },
         fatal:{
             color:"redBright",
-            writeToFile:true
+            writeToFile:true,
+            sendToServer:true
         }
     }
 }
