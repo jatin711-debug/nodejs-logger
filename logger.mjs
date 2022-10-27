@@ -29,8 +29,8 @@ export const log = async (options,requestObject,serverUrl="") => {
 
 /**
  * 
- * @param {*} level 
- * @returns 
+ * @param {string} level 
+ * @returns {string}
  */
 const getLevelName = (level) => {
     return level && config.levels.hasOwnProperty(level) ? level:'info'
