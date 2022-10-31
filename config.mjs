@@ -40,7 +40,7 @@ export default {
             color:"green",
             writeToFile:false,
             sendToServer:true,
-            sendToConsole:false
+            sendToConsole:true
         },
         error:{
             color:"red",

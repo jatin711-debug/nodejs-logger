@@ -11,7 +11,10 @@ import axios from 'axios';
  * @param {object} options 
  * object -> { level, message, error }
  */
-export const log = (options,requestObject,serverUrl="") => {
+
+let logServerAddress = null || "";
+
+export const logger = (options,requestObject) => {
     const levelName = getLevelName(options.level)
     let message = options.message ?? 'Unidentified Error'
     const error = options.error ?? null
@@ -23,9 +26,13 @@ export const log = (options,requestObject,serverUrl="") => {
         writeToFile(levelName,message)
     }
     if(config.levels[levelName].sendToServer) {
-        sendLogToServer(levelName,message,request,serverUrl)
+        if(logServerAddress !== null && logServerAddress !== "" && request !== null) {
+            sendLogToServer( levelName, message, request, getLogServerAddress());
+        }
+        chalk.red("Please Set Logging Server First using logger.setLogServerAddress() method and try again...")
+        return
     }
-} 
+}
 
 /**
  * 
@@ -142,7 +149,8 @@ const sendLogToServer = (level,message,requestObject,serverUrl) => {
     }
     const mac = address.mac(function(err,m){return m})
     const ip = address.ip()
-    const data = `{"level":"${level.toUpperCase()}","message":"${message}", "Request": ${requestObject} ,"timestamp":"${getFormattedCurrentDate()}","mac-address":"${mac}","ip":"${ip}"}`
+    const requestData = `"Method":"${requestObject.method}","Host":"${requestObject.hostname}", "BaseUrl":"${requestObject.baseUrl}", "Url":"${requestObject.url}"`
+    const data = `{"Level":"${level.toUpperCase()}","Message":"${message}",${requestData} ,"timestamp":"${getFormattedCurrentDate()}","mac-address":"${mac}","ip":"${ip}"}`
     try {
         const instance = axios.create({
             baseURL:serverUrl
@@ -187,3 +195,10 @@ const createRequestObject = (request) =>{
         url: request.url
     }
 }
+
+export const setLogServerAddress = (address) =>{
+    logServerAddress = address;
+    chalk.greenBright("Successfully set logging serverUrl to -",address);
+}
+
+export const getLogServerAddress = () => logServerAddress
