@@ -11,7 +11,7 @@ import axios from 'axios';
  * @param {object} options 
  * object -> { level, message, error }
  */
-export const log = async (options,requestObject,serverUrl="") => {
+export const log = (options,requestObject,serverUrl="") => {
     const levelName = getLevelName(options.level)
     let message = options.message ?? 'Unidentified Error'
     const error = options.error ?? null
@@ -23,7 +23,7 @@ export const log = async (options,requestObject,serverUrl="") => {
         writeToFile(levelName,message)
     }
     if(config.levels[levelName].sendToServer) {
-        await sendLogToServer(levelName,message,serverUrl)
+        sendLogToServer(levelName,message,request,serverUrl)
     }
 } 
 
@@ -135,20 +135,19 @@ const writeToFile = async (level,message) => {
  * @param {string} serverUrl 
  * @returns 
  */
-const sendLogToServer = async (level,message,serverUrl) => {
+const sendLogToServer = (level,message,requestObject,serverUrl) => {
     if(validateUrl(serverUrl)) {
-        console.log('Server....')
         chalk.red("UnIdentified server Url Protocol....")
         return;
     }
     const mac = address.mac(function(err,m){return m})
     const ip = address.ip()
-    const data = `{"level":"${level.toUpperCase()}","message":"${message}", "timestamp":"${getFormattedCurrentDate()}","mac-address":"${mac}","ip":"${ip}"}`
+    const data = `{"level":"${level.toUpperCase()}","message":"${message}", "Request": ${requestObject} ,"timestamp":"${getFormattedCurrentDate()}","mac-address":"${mac}","ip":"${ip}"}`
     try {
         const instance = axios.create({
             baseURL:serverUrl
         })
-        await instance.post("/",{
+        instance.post("/",{
                 logs:data
             }
         );

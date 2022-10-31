@@ -4,7 +4,7 @@ export default {
             color:[200,148,255],
             writeToFile:true,
             sendToServer:true,
-            sendToConsole:true
+            sendToConsole:true,
         },
         warn:{
             color:"#ffff00",
@@ -38,9 +38,9 @@ export default {
         },
         info:{
             color:"green",
-            writeToFile:true,
+            writeToFile:false,
             sendToServer:true,
-            sendToConsole:true
+            sendToConsole:false
         },
         error:{
             color:"red",
