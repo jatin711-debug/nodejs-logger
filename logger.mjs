@@ -12,25 +12,25 @@ import axios from 'axios';
  * object -> { level, message, error }
  */
 
-let logServerAddress = null || "";
+let logServerAddress = "";
 
 export const logger = (options,requestObject) => {
-    const levelName = getLevelName(options.level)
-    let message = options.message ?? 'Unidentified Error'
-    const error = options.error ?? null
+    const levelName = getLevelName(options.level);
+    let message = options.message ?? 'Unidentified Error';
+    const error = options.error ?? null;
     const request = createRequestObject(requestObject);
+
     if(config.levels[levelName].sendToConsole) {
-        writeToConsole(levelName,message,error, request)
+        writeToConsole(levelName,message, error, request)
     }
     if(config.levels[levelName].writeToFile) {
         writeToFile(levelName,message)
     }
     if(config.levels[levelName].sendToServer) {
-        if(logServerAddress !== null && logServerAddress !== "" && request !== null) {
-            sendLogToServer( levelName, message, request, getLogServerAddress());
+        if(getLogServerAddress() == "") {
+            throw new Error("Please Set Logging Server First to send Log to server using setLogServerAddress(string:Address) method and try again...")
         }
-        chalk.red("Please Set Logging Server First using logger.setLogServerAddress() method and try again...")
-        return
+        sendLogToServer( levelName, message, request);
     }
 }
 
@@ -68,7 +68,7 @@ const writeToConsole = (levelName, message, error = null, requestObject = null) 
         chalkFunction = chalk[level.color]
     }
     message = error ? `${chalkFunction(`${error.message} \n ${error.stack}`)}` : message
-    const header = `[${levelName.toUpperCase()}]:[${getFormattedCurrentDate()}]`
+    const header = `[${levelName.toUpperCase()}]:[${getFormattedCurrentTime()}]`
     const ipData = `[Mac Address:${address.mac(function(err,mac){ return mac })}] [IP Address: ${address.ip()}]`
     const requestData = `[Method:${requestObject.method} Host:${requestObject.hostname} BaseUrl:${requestObject.baseUrl} Url:${requestObject.url}]`
     console.log(`${chalkFunction(header)} ${chalkFunction(message)} ${chalkFunction(ipData)} ${chalkFunction(requestData)}`)
@@ -105,15 +105,17 @@ export const readLog = async (fileName = null)=>{
     });
 }
 
-
 /**
  * 
- * @returns Formatted Date
+ * @returns Formatted Time
  */
-const getFormattedCurrentDate = () => {
+const getFormattedCurrentTime = () => {
     return moment(new Date()).format(moment.HTML5_FMT.DATETIME_LOCAL_SECONDS)
 }
 
+export const getFormattedCurrentDate = (date) => {
+    return `${date.getDate()}-${date.getMonth()}-${date.getFullYear()}`;
+}
 
 /**
  * 
@@ -124,7 +126,7 @@ const writeToFile = async (level,message) => {
     const logsDir = "./logs"
     const mac = address.mac(function(err,m){return m})
     const ip = address.ip()
-    const data = `{"level":"${level.toUpperCase()}","message":"${message}", "timestamp":"${getFormattedCurrentDate()}","mac-address":"${mac}","ip":"${ip}"}\r\n`
+    const data = `{"level":"${level.toUpperCase()}","message":"${message}", "timestamp":"${getFormattedCurrentTime()}","mac-address":"${mac}","ip":"${ip}"}\r\n`
     if(!existsSync(logsDir)){
         mkdirSync(logsDir)
     }
@@ -132,7 +134,7 @@ const writeToFile = async (level,message) => {
         encoding:"utf8",
         mode:438
     }
-    appendFileSync(`./logs/${level}.log`,data,options);
+    appendFileSync(`${logsDir}/${level}.log`,data,options);
 }
 
 /**
@@ -142,26 +144,23 @@ const writeToFile = async (level,message) => {
  * @param {string} serverUrl 
  * @returns 
  */
-const sendLogToServer = (level,message,requestObject,serverUrl) => {
-    if(validateUrl(serverUrl)) {
-        chalk.red("UnIdentified server Url Protocol....")
+const sendLogToServer = (level,message,requestObject) => {
+    if(validateUrl(getLogServerAddress())) {
+        console.log(chalk.red("UnIdentified server Url Protocol...."))
         return;
     }
     const mac = address.mac(function(err,m){return m})
     const ip = address.ip()
     const requestData = `"Method":"${requestObject.method}","Host":"${requestObject.hostname}", "BaseUrl":"${requestObject.baseUrl}", "Url":"${requestObject.url}"`
-    const data = `{"Level":"${level.toUpperCase()}","Message":"${message}",${requestData} ,"timestamp":"${getFormattedCurrentDate()}","mac-address":"${mac}","ip":"${ip}"}`
+    const data = `{"Level":"${level.toUpperCase()}","Message":"${message}",${requestData} ,"timestamp":"${getFormattedCurrentTime()}","mac-address":"${mac}","ip":"${ip}"}`
     try {
-        const instance = axios.create({
-            baseURL:serverUrl
-        })
-        instance.post("/",{
+        axios.post(getLogServerAddress(),{
                 logs:data
             }
         );
-        console.log(chalk.green('Success Sending Logs to server',serverUrl))
+        console.log(chalk.green('Success Sending Logs to server'),getLogServerAddress())
     } catch (error) {
-        console.log(error)
+        console.log(chalk.red('Error Sending Logs to server...'));
     }
 }
 
@@ -196,9 +195,10 @@ const createRequestObject = (request) =>{
     }
 }
 
-export const setLogServerAddress = (address) =>{
-    logServerAddress = address;
-    chalk.greenBright("Successfully set logging serverUrl to -",address);
+export const setLogServerAddress = (baseAddress) =>{
+    logServerAddress = baseAddress;
+    console.log(chalk.greenBright("Successfully set logging serverUrl to -"),logServerAddress);
 }
 
 export const getLogServerAddress = () => logServerAddress
+

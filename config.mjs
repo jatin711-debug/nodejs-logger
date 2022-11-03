@@ -1,4 +1,4 @@
-export default {
+const config = {
     levels: {
         access:{
             color:[200,148,255],
@@ -38,7 +38,7 @@ export default {
         },
         info:{
             color:"green",
-            writeToFile:false,
+            writeToFile:true,
             sendToServer:true,
             sendToConsole:true
         },
@@ -56,3 +56,5 @@ export default {
         }
     }
 }
+
+export default config;

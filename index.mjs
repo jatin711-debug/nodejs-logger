@@ -1,2 +1,2 @@
 export * from './dataTemplate.mjs';
-export * from './logger.mjs'
+export * from './logger.mjs';
